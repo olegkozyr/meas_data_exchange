@@ -121,7 +121,7 @@ class Application(tk.Frame):
         self.canvasFrame._ax.legend(loc=1)
         self.canvasFrame._ax.grid()
         self.canvasFrame._ax.figure.canvas.draw()
-########        self.saveFrame.fileHandle.write('{:.4f} {:.4f} {:.4f} {}'.format(2.4, 5.666, '\n'))
+        self.saveFrame.fileHandle.write('{:.4f} {:.4f} {:.4f} {}'.format(2.4, 5.666, '\n'))
     
     def _start(self):
         if self.isStarted:
