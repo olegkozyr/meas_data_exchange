@@ -5,6 +5,8 @@ matplotlib.use('TkAgg')
 # Бібліотека для математичних розрахунків
 import numpy as np
 
+from time import localtime, strftime
+
 # Канва та графіка та тулбар для роботи з графіком
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -84,11 +86,6 @@ class SaveFrame(tk.Frame):
         self.pathVar.set(self.filedialog.asksaveasfilename(initialdir = "", \
                                            title = "Створити файл", \
                                            filetypes = (("Txt files","*.txt"),("all files","*.*"))))
-        if self.pathVar.get(): 
-            with open(self.pathVar.get(), 'w') as f:
-                pass
-#f.write('{:.4f} {:.4f} {}'.format(2.4, 5.666, '\n'))
-#f.write('Second Line' +'\n')
 
 class Application(tk.Frame):
     def __init__(self, master):
@@ -108,21 +105,33 @@ class Application(tk.Frame):
         self.saveFrame.pack(txn)
 
     def _update_canvas(self):
+        '''
+           Update figure plots
+        '''
         self.canvasFrame._ax.clear()
         t = np.linspace(0, self.sampleLen, 1001)
-        # Shift the sinusoid as a function of time.
-        x1 = np.sin(2*np.pi*t) + np.random.randn(t.shape[0])/10
-        x2 = np.cos(2*np.pi*t) + np.random.randn(t.shape[0])/10
-        x3 = np.sin(2*np.pi*t) * np.cos(2*np.pi*t) + \
+        ch0 = np.sin(2*np.pi*t) + np.random.randn(t.shape[0])/10
+        ch1 = np.cos(2*np.pi*t) + np.random.randn(t.shape[0])/10
+        ch2 = np.sin(2*np.pi*t) * np.cos(2*np.pi*t) + \
                                  np.random.randn(t.shape[0])/10
-        self.canvasFrame._ax.plot(t, x1, label='ch0')
-        self.canvasFrame._ax.plot(t, x2, label='ch1') 
-        self.canvasFrame._ax.plot(t, x3, label='ch2')  
+        self.canvasFrame._ax.plot(t, ch0, label='ch0')
+        self.canvasFrame._ax.plot(t, ch1, label='ch1') 
+        self.canvasFrame._ax.plot(t, ch2, label='ch2')  
         self.canvasFrame._ax.legend(loc=1)
         self.canvasFrame._ax.grid()
         self.canvasFrame._ax.figure.canvas.draw()
-        self.saveFrame.fileHandle.write('{:.4f} {:.4f} {:.4f} {}'.format(2.4, 5.666, '\n'))
-    
+        return t, ch0, ch1, ch2
+
+    def _update_canvas2(self):
+        '''
+           Update figure plots and save them to file
+        '''
+        t, ch0, ch1, ch2 = self._update_canvas()
+
+        for x0, x1, x2, x3 in zip(t, ch0, ch1, ch2):
+            self.saveFrame.fileHandle.write('{:.4f} {:.4f} {:.4f} {:.4f}{}'.format(x0, x1, x2, x3, '\n'))
+            self.saveFrame.fileHandle.flush()
+
     def _start(self):
         if self.isStarted:
             self._timer.stop()
@@ -131,15 +140,22 @@ class Application(tk.Frame):
                 self.saveFrame.fileHandle = None
             self.isStarted = False
         else:
-            self.sampleLen = self.runFrame.get_sample_size()
-            self._timer = self.canvasFrame._canvas.new_timer(
-                              self.runFrame.get_fps(), \
-                              [(self._update_canvas, (), {})])
-            self._timer.start()
+            self.sampleLen = self.runFrame.get_sample_size() 
             if self.saveFrame.checkVar.get() and self.saveFrame.pathVar.get():
-                self.saveFrame.fileHandle = open(self.saveFrame.pathVar.get(), 'w')
+                self.saveFrame.fileHandle = open(self.saveFrame.pathVar.get(), 'w')                               
+                self.saveFrame.fileHandle.write('{}{}'.format(\
+                    strftime("%a, %d %b %Y %H:%M:%S +0300", localtime()), '\n'))
+                self.saveFrame.fileHandle.write('{} {} {} {}{}'.format('t', 'ch0', 'ch1', 'ch2', '\n'))
+                self.saveFrame.fileHandle.flush()                
+                self._timer = self.canvasFrame._canvas.new_timer(
+                                  self.runFrame.get_fps(), \
+                                  [(self._update_canvas2, (), {})])
+            else:
+                self._timer = self.canvasFrame._canvas.new_timer(
+                                  self.runFrame.get_fps(), \
+                                  [(self._update_canvas, (), {})])
+            self._timer.start()
             self.isStarted = True
-
 
 if __name__ == "__main__":
     root = tk.Tk()
