@@ -65,7 +65,7 @@ class RunFrame(tk.Frame):
     def get_fps(self):
         return eval(self.fps.get())
 
-class SaveFrame(tk.Frame):
+class SaveOpenFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.pack(txn)
@@ -81,11 +81,31 @@ class SaveFrame(tk.Frame):
         tk.Button(master=self, 
                   text='Створити', 
                   command=self._save2file).pack(side=tk.LEFT)  
+        tk.Button(master=self, 
+                  text='Відкрити', 
+                  command=self._openfile).pack(side=tk.RIGHT)  
 
     def _save2file(self):
         self.pathVar.set(self.filedialog.asksaveasfilename(initialdir = "", \
                                            title = "Створити файл", \
                                            filetypes = (("Txt files","*.txt"),("all files","*.*"))))
+
+    def _open_file(self):
+        path = self.filedialog.askopenfilename(initialdir = "", \
+                                           title = "Відкрити файл", \
+                                           filetypes = (("Txt files","*.txt"),("all files","*.*"))))
+        with open(path, 'r') as _file:
+            _file.redline()
+            _file.redline()
+            for f in _file:
+                s = f.readline()
+
+        chanNames = ''
+        with open(path, 'r') as f:
+            f.readline().split()
+            chanNames = f.readline().split()[1:]
+        array = np.genfromtxt(path, skip_header=2)
+        
 
 class Application(tk.Frame):
     def __init__(self, master):
@@ -104,23 +124,26 @@ class Application(tk.Frame):
         self.saveFrame = SaveFrame(self)
         self.saveFrame.pack(txn)
 
-    def _update_canvas(self):
-        '''
-           Update figure plots
-        '''
-        self.canvasFrame._ax.clear()
+    def genarator(self):
         t = np.linspace(0, self.sampleLen, 1001)
         ch0 = np.sin(2*np.pi*t) + np.random.randn(t.shape[0])/10
         ch1 = np.cos(2*np.pi*t) + np.random.randn(t.shape[0])/10
         ch2 = np.sin(2*np.pi*t) * np.cos(2*np.pi*t) + \
-                                 np.random.randn(t.shape[0])/10
-        self.canvasFrame._ax.plot(t, ch0, label='ch0')
-        self.canvasFrame._ax.plot(t, ch1, label='ch1') 
-        self.canvasFrame._ax.plot(t, ch2, label='ch2')  
+                                 np.random.randn(t.shape[0])/10 
+        return np.transpose(np.vstack((t, ch0, ch1, ch2)))
+
+    def _update_canvas(self, data, chanNames):
+        '''
+           Update figure plots
+        '''
+        self.canvasFrame._ax.clear()
+
+        self.canvasFrame._ax.plot(data[0], data[1], label=chanNames[0])
+        self.canvasFrame._ax.plot(data[0], data[2], label=chanNames[1]) 
+        self.canvasFrame._ax.plot(data[0], data[3], label=chanNames[2])  
         self.canvasFrame._ax.legend(loc=1)
         self.canvasFrame._ax.grid()
         self.canvasFrame._ax.figure.canvas.draw()
-        return t, ch0, ch1, ch2
 
     def _update_canvas2(self):
         '''
