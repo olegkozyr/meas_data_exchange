@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 import tkinter as tk
+import tkinter.filedialog
 
 tby = dict(side=tk.TOP, \
            fill=tk.BOTH, \
